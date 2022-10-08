@@ -66,6 +66,13 @@
   "Return the value associated with the NODE."
   (cadr node))
 
+(defun ptree-set-node-value (node value)
+  "Set value of NODE to VALUE.
+An error is returned if the node is not a leaf."
+  (if (ptree-leaf-p node)
+      (setcdr node (list value))
+    (error "Node is not a leaf")))
+
 (defun ptree-get-child-nodes-num (node)
   "Return the number of child nodes of NODE."
   (let ((child-nodes (cddr node)))

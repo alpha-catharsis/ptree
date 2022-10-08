@@ -36,6 +36,17 @@
   (should (eq (ptree-get-node-value '("test" nil ("test2" nil nil))) nil))
   (should (eq (ptree-get-node-value '("test" 42)) 42)))
 
+(ert-deftest ptree-test-set-node-value ()
+  (should-error (ptree-set-node-value '(nil nil nil) 42))
+  (should-error (ptree-set-node-value '("test" nil nil) 42))
+  (should-error (ptree-set-node-value '("test" nil ("test2" nil nil) 42)))
+  (should-error (ptree-set-node-value '("test" nil ("test2" 9) 42)))
+  (let ((pt '("test" 42)))
+    (ptree-set-node-value pt 9)
+    (should (equal pt '("test" 9)))
+    (ptree-set-node-value pt "a")
+    (should (equal pt '("test" "a")))))
+
 (ert-deftest ptree-test-get-child-nodes-num ()
   (should (eq (ptree-get-child-nodes-num '(ptree-create)) 0))
   (should (eq (ptree-get-child-nodes-num '("test" nil nil)) 0))
