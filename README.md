@@ -1,2 +1,2 @@
-# pforest
-Property forest data structure for Emacs
+# ptree
+Property tree data structure for Emacs
