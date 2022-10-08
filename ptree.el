@@ -40,12 +40,11 @@
 
 ;;; Code:
 
-
 ;; Public functions
 
 (defun ptree-create ()
   "Create an empty property tree."
-  '(nil nil nil))
+  (list nil nil nil))
 
 (defun ptree-root-p (node)
   "Return t if NODE is the root of the property tree, otherwise nil."
@@ -53,11 +52,11 @@
 
 (defun ptree-branch-p (node)
   "Return t if NODE is a branch of the property tree, otherwise nil."
-  (and (not (null (car node))) (null (cadr node))))
+  (and (not (null (car node))) (not (null (cddr node)))))
 
 (defun ptree-leaf-p (node)
   "Return t if NODE is a leaf of the property tree, otherwise nil."
-  (not (null (cadr node))))
+  (null (cddr node)))
 
 (defun ptree-get-node-tag (node)
   "Return the tag associated with the NODE."
@@ -77,7 +76,7 @@ The function returns the last node of the path."
     (ptree--make-empty-branch res)
     res))
 
-(defun ptree-add-branches (pt &rest branches)
+(defun ptree-add-child-nodes (pt &rest branches)
   "Add BRANCHES in tree PT.
 If the branch already exists, is in not modified. It the brach has the
  same tag of an existing leaf, the leaf is turned into a branch."
@@ -86,7 +85,7 @@ If the branch already exists, is in not modified. It the brach has the
      (ptree--create-node pt (car branches)))
     (setq branches (cdr branches))))
 
-(defun ptree-add-leaf (pt value path)
+(defun ptree-add-value-at-path (pt value path)
   "Add a leaf with VALUE in PT at PATH the specified path.
 If part of the path already exist, it is not modified. If the path runs
 through a leaf, it is turned into a branch to complete the specified path.
@@ -124,7 +123,6 @@ Return the deleted node. Throw a an error if the node does not exist"
       (setq path-list (cdr path-list)))
     (if (not node)
         (error "Path does not exist")
-      (message "del: %s %s" node (car path-list))
       (let ((deleted-node (ptree--delete-node node (car path-list))))
         (if deleted-node
             deleted-node
@@ -133,7 +131,6 @@ Return the deleted node. Throw a an error if the node does not exist"
 (defun ptree-delete-child-nodes (tree &rest child-nodes)
   "Delete the specified CHILD-NODES from TREE."
   (while child-nodes
-    (message "deleted: %s %s" tree (car child-nodes))
     (if (not (ptree--delete-node tree (car child-nodes)))
         (error "Path does not exist"))
     (setq child-nodes (cdr child-nodes))))
@@ -218,11 +215,11 @@ Return the deleted node. Throw a an error if the node does not exist"
       (let ((cmp (ptree--compare-tags tag (car cn))))
         (cond ((eq cmp 'eq) (progn (setq res cn)
                                    (setq cn nil)
-                                   (if (cddr cns)
+                                   (if (cdr cns)
                                        (progn (setcar cns (cadr cns))
                                               (setcdr cns (cddr cns)))
                                      (if (eq pcns nil)
-                                         (setcdr tree '(nil nil))
+                                         (setcdr tree (list nil nil))
                                        (setcdr pcns nil)))))
               ((eq cmp 'gt) (progn (setq pcns cns)
                                    (setq cns (cdr cns))
@@ -232,7 +229,7 @@ Return the deleted node. Throw a an error if the node does not exist"
 
 (defun ptree--make-empty-branch (tree)
   "Transform the TREE into an empty tree."
-  (setcdr tree '(nil nil)))
+  (setcdr tree (list nil nil)))
 
 (defun ptree--make-leaf (tree value)
   "Transform the TREE into a leaf with VALUE."
