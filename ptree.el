@@ -66,6 +66,13 @@
   "Return the value associated with the NODE."
   (cadr node))
 
+(defun ptree-get-child-nodes-num (node)
+  "Return the number of child nodes of NODE."
+  (let ((child-nodes (cddr node)))
+    (if (or (not child-nodes) (not (car child-nodes)))
+        0
+      (length (cddr node)))))
+
 (defun ptree-add-node-at-path (pt path)
   "Add PATH in tree PT.
 If part of the path already exist, it is not modified. If the path runs
@@ -103,6 +110,10 @@ The function returns the leaf node."
       (setq node (ptree--get-node node (car path-list)))
       (setq path-list (cdr path-list)))
     node))
+
+(defun ptree-get-child-node-at-index (tree index)
+  "Get child node at INDEX in TREE. Return nil if index is out of range."
+  (nth index (cddr tree)))
 
 (defun ptree-get-value-at-path (tree path)
   "Get the value of leaf at PATH in TREE.
