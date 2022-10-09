@@ -250,15 +250,17 @@ t is returned. Otherwise ITER is unchanged and nil is returned."
   (ptree--make-leaf (ptree--create-node (car iter) tag) value))
 
 (defun ptree-iter-delete-node (iter)
-  "Delete node associated with iterator ITER."
+  "Delete node associated with iterator ITER and return the node.
+Return 'nil if node cannot be deleted."
   (let ((parent (cadr iter)))
     (if parent
         (progn
           (let ((target-node (car iter)))
             (if (not (ptree-iter-move-next iter))
                 (ptree-iter-move-up iter))
-          (ptree--delete-exact-node parent target-node)))
-    (error "Cannot delete initial node"))))
+            (ptree--delete-exact-node parent target-node)
+            target-node))
+      nil)))
 
 (defun ptree-iter-delete-child-nodes (iter &rest child-nodes)
   "Delete CHILD-NODES from the node associated with iterator ITER."
