@@ -103,11 +103,16 @@ Return 'not-found if the node does not exist or if it is not a leaf."
 ;; Public mutators
 
 (defun ptree-set-node-value (node value)
-  "Set value of NODE to VALUE.
-An error is returned if the node is not a leaf."
-  (if (ptree-leaf-p node)
-      (setcdr node (list value))
-    (error "Node is not a leaf")))
+  "Set the value of NODE to VALUE.
+If NODE is the root node, its value is not set.
+If NODE is a branch node, it is transformed into a leaf node and its value
+is set to VALUE.
+If NODE is a leaf node, its value is set to VALUE.
+Return 't if VALUE has been set, otherwise 'nil."
+  (if (ptree-root-p node)
+      nil
+    (setcdr node (list value))
+    t))
 
 (defun ptree-add-child-nodes (node &rest child-nodes)
   "Add CHILD-NODES in tree NODE.
