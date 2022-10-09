@@ -144,11 +144,16 @@ The function returns the leaf node."
     res))
 
 (defun ptree-delete-child-nodes (node &rest child-nodes)
-  "Delete the specified CHILD-NODES from NODE."
-  (while child-nodes
-    (if (not (ptree--delete-node node (car child-nodes)))
-        (error "Path does not exist"))
-    (setq child-nodes (cdr child-nodes))))
+  "Delete the specified CHILD-NODES from NODE.
+It stops at the first child nodes that does not exist.
+Return 'nil if all child nodes have been deleted, otherwise return the list
+of tags of the child nodes not deleted."
+  (let ((in-progress t))
+    (while (and in-progress child-nodes)
+      (if (not (ptree--delete-node node (car child-nodes)))
+          (setq in-progress nil)
+        (setq child-nodes (cdr child-nodes))))
+  child-nodes))
 
 (defun ptree-delete-node-at-path (node path)
   "Delete node at PATH in NODE.
