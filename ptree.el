@@ -49,15 +49,15 @@
 ;; Public predicates
 
 (defun ptree-root-p (node)
-  "Return t if NODE is the root of the property tree, otherwise nil."
+  "Return t if NODE is the root of the tree, otherwise nil."
   (null (car node)))
 
 (defun ptree-branch-p (node)
-  "Return t if NODE is a branch of the property tree, otherwise nil."
+  "Return t if NODE is a branch of the  tree, otherwise nil."
   (and (not (null (car node))) (not (null (cddr node)))))
 
 (defun ptree-leaf-p (node)
-  "Return t if NODE is a leaf of the property tree, otherwise nil."
+  "Return t if NODE is a leaf of the  tree, otherwise nil."
   (null (cddr node)))
 
 ;; Public accessors
@@ -68,7 +68,9 @@
 
 (defun ptree-get-node-value (node)
   "Return the value associated with the NODE."
-  (cadr node))
+  (if (ptree-leaf-p node)
+      (cadr node)
+    'not-found))
 
 (defun ptree-get-child-nodes-num (node)
   "Return the number of child nodes of NODE."

@@ -33,10 +33,12 @@
   (should (equal (ptree-get-node-tag '("test" 42)) "test")))
 
 (ert-deftest ptree-test-get-node-value ()
-  (should (eq (ptree-get-node-value (ptree-create)) nil))
-  (should (eq (ptree-get-node-value '("test" nil nil)) nil))
-  (should (eq (ptree-get-node-value '("test" nil ("test2" nil nil))) nil))
-  (should (eq (ptree-get-node-value '("test" 42)) 42)))
+  (should (eq (ptree-get-node-value (ptree-create)) 'not-found))
+  (should (eq (ptree-get-node-value '("test" nil nil)) 'not-found))
+  (should (eq (ptree-get-node-value '("test" nil ("test2" nil nil)))
+              'not-found))
+  (should (eq (ptree-get-node-value '("test" 42)) 42))
+  (should (eq (ptree-get-node-value '("test" nil)) nil)))
 
 (ert-deftest ptree-test-get-child-nodes-num ()
   (should (eq (ptree-get-child-nodes-num '(ptree-create)) 0))
@@ -248,9 +250,12 @@
     (should (eq (ptree-iter-tag (ptree-iter (list tag nil nil))) tag))))
 
 (ert-deftest ptree-test-iter-value ()
-  (should (equal (ptree-iter-value (ptree-iter '(nil nil (zero 42)))) nil))
-  (should (equal (ptree-iter-value (ptree-iter '("test" nil (zero 42)))) nil))
+  (should (equal (ptree-iter-value (ptree-iter '(nil nil (zero 42))))
+                 'not-found))
+  (should (equal (ptree-iter-value (ptree-iter '("test" nil (zero 42))))
+                 'not-found))
   (should (equal (ptree-iter-value (ptree-iter '(zero 42))) 42))
+  (should (equal (ptree-iter-value (ptree-iter '(zero nil))) nil))
   (let ((value "test"))
     (should (eq (ptree-iter-value (ptree-iter (list "test" value))) value))))
 
