@@ -157,17 +157,14 @@ of tags of the child nodes not deleted."
 
 (defun ptree-delete-node-at-path (node path)
   "Delete node at PATH in NODE.
-Return the deleted node. Throw a an error if the node does not exist"
+Return the deleted node or nil if it the path does not exist."
   (let ((path-list (ptree--get-path-as-list path)))
     (while (and node (cdr path-list))
       (setq node (ptree--get-node node (car path-list)))
       (setq path-list (cdr path-list)))
-    (if (not node)
-        (error "Path does not exist")
-      (let ((deleted-node (ptree--delete-node node (car path-list))))
-        (if deleted-node
-            deleted-node
-          (error "Path does not exist"))))))
+    (when node
+      (setq node (ptree--delete-node node (car path-list)))))
+    node)
 
 ;; Public interator functions
 
