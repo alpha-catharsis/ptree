@@ -400,6 +400,47 @@
     (should (equal (car iter) '("a" nil nil)))
     (should (equal (cadr iter) nil))))
 
+(ert-deftest ptree-test-to-string ()
+  (let ((pt '(nil nil
+                  (current-users 12)
+                  (desktop nil (background-color "black"))
+                  (windows nil
+                           ("xterm" nil
+                            (pos-x 50)
+                            (pos-y 100)
+                            (width 500)
+                            (height 200))
+                           ("emacs" nil
+                            (pos-x 600)
+                            (pos-y 0)
+                            (width 1000)
+                            (height 800)))
+                  (processes nil
+                             (by-id nil
+                                    (0 "startx")
+                                    (1 "dbus-launch")
+                                    (2 "X"))))))
+    (should (string= (ptree-to-string pt) "current-users: 12
+desktop
+  background-color: black
+windows
+  \"xterm\"
+    pos-x: 50
+    pos-y: 100
+    width: 500
+    height: 200
+  \"emacs\"
+    pos-x: 600
+    pos-y: 0
+    width: 1000
+    height: 800
+processes
+  by-id
+    0: startx
+    1: dbus-launch
+    2: X\n"))
+  ))
+
 ;; Test launcher
 
 (defun ptree-run-tests ()

@@ -324,6 +324,37 @@ the list of tags associated to the child nodes that have not been deleted.
 Otherwise it returns 'nil."
   (apply #'ptree-delete-child-nodes (car iterator) child-tags))
 
+;; Public conversion function
+
+(defun ptree-to-string (node)
+  "Convert NODE to string."
+  (let ((res "")
+        (iter (ptree-iter node))
+        (level 0)
+        (dir 'down))
+    (ptree-iter-move-down iter)
+    (let ((enter-node t))
+      (while (ptree-iter-tag iter)
+        (when enter-node
+          (setq res (concat res (ptree--node-to-string
+                                 (ptree-iter-node iter) level))))
+        (setq enter-node nil)
+        (cond ((eq dir 'down)
+               (if (not (ptree-iter-move-down iter))
+                   (setq dir 'next)
+                 (setq enter-node t)
+                 (setq level (+ level 1))))
+              ((eq dir 'next)
+               (if (not (ptree-iter-move-next iter))
+                   (setq dir 'up)
+                 (setq enter-node t)
+                 (setq dir 'down)))
+              (t
+               (when (ptree-iter-move-up iter)
+                 (setq level (- level 1))
+                 (setq dir 'next))))))
+    res))
+
 ;; Internal functions
 
 (defun ptree--get-path-as-list (path)
@@ -509,6 +540,20 @@ The function returns the deleted node."
 (defun ptree--iter-move-to-sibling-node (iterator sibling-node)
   "Move the iterator ITERATOR to the SIBLING-NODE."
   (setcar iterator sibling-node))
+
+(defun ptree--tag-to-string (tag)
+  "Convert TAG to string."
+  (if (stringp tag)
+      (format "\"%s\"" tag)
+    (format "%s" tag)))
+
+(defun ptree--node-to-string (node level)
+  "Convert NODE at LEVEL to string."
+  (let ((tag-str (ptree--tag-to-string (ptree-get-node-tag node)))
+        (indent-str (make-string (* 2 level) ?\s)))
+       (if (ptree-leaf-p node)
+           (format "%s%s: %s\n" indent-str tag-str (ptree-get-node-value node))
+    (format "%s%s\n" indent-str tag-str))))
 
 ;; Package provision
 
