@@ -43,7 +43,8 @@
 ;; Public constructor functions
 
 (defun ptree-create ()
-  "Create an empty property tree."
+  "Create an empty property tree.
+This function returns the root node of the property tree."
   (list nil nil nil))
 
 ;; Public predicates
@@ -84,9 +85,9 @@ If NODE is not a leaf node, 'not-found is returned."
 (defun ptree-get-child-nodes-num (node)
   "Get the number of child nodes of NODE."
   (let ((child-nodes (cddr node)))
-    (if (or (not child-nodes) (not (car child-nodes)))
-        0
-      (length (cddr node)))))
+    (if (car child-nodes)
+        (length child-nodes)
+    0)))
 
 (defun ptree-get-child-node-at-index (node index)
   "Get the child node of NODE at position INDEX.
@@ -137,8 +138,9 @@ If a tag refers to an existing branch node, it is not modified.
 It a tag refers to an existing leaf node, it is turned into a branch and its
 associated value is lost."
   (while child-tags
-    (ptree--make-empty-branch
-     (ptree--create-node node (car child-tags)))
+    (let ((node (ptree--create-node node (car child-tags))))
+      (when (ptree--incomplete-p node)
+        (ptree--make-empty-branch node)))
     (setq child-tags (cdr child-tags))))
 
 (defun ptree-add-node-at-path (node path)
@@ -147,12 +149,13 @@ PATH is the list of tags that shall be followed to reach the descendant node.
 If only one tag has to be specified, it is possible to set PATH to the value
 of the tag insead of passing PATH as the list of a single tag.
 If part of the path already exists it is not modified, but If the path runs
-through a leaf node, it is turned into a branch node to complete the specified
-path.
+through a leaf node, it is turned into a branch node to complete the
+specified path.
 The function returns the last node of the path."
   (let* ((path-list (ptree--get-path-as-list path))
-        (res (ptree--create-path node path-list)))
-    (ptree--make-empty-branch res)
+         (res (ptree--create-path node path-list)))
+    (when (ptree--incomplete-p res)
+      (ptree--make-empty-branch res))
     res))
 
 (defun ptree-add-value-at-path (node path value)
@@ -162,8 +165,8 @@ If only one tag has to be specified, it is possible to set PATH to the value
 of the tag insead of passing PATH as the list of a single tag.
 If part of the path already exists it is not modified, but If the path runs
 through a leaf node, it is turned into a branch node to complete the specified
-path. Similary, if the last node specified in PATH is a branch node, it
-is turned into a leaf node to hold VALUE.
+path. If the last node specified in PATH is a branch node, it
+is turned into a leaf node and its value is set to VALUE.
 This function returns the leaf node."
   (let* ((path-list (ptree--get-path-as-list path))
          (res (ptree--create-path node path-list)))
@@ -303,11 +306,12 @@ If a child node with the specified tag already exists, it is overwritten."
 (defun ptree-iter-add-child-and-move (iterator tag)
   "Add child node to the node associated with ITERATOR and move to it.
 The child node is created with TAG.
-If the branch node exists, its child nodes are removed)
+If the branch node exists, it is not modified.
 If the node exists and it is a leaf node, it is transformed into a
 branch node."
   (let ((child-node (ptree--create-node (car iterator) tag)))
-    (ptree--make-empty-branch child-node)
+    (when (ptree--incomplete-p child-node)
+      (ptree--make-empty-branch child-node))
     (ptree--iter-move-to-child-node iterator child-node)))
 
 (defun ptree-iter-delete-node (iterator)
@@ -461,10 +465,14 @@ The function returns 'nil if such child node does not exist."
   "Transform NODE into a leaf node with VALUE."
   (setcdr node (list value)))
 
+(defun ptree--incomplete-p (node)
+  "Return 't if NODE is incomplete, otherwise 'nil."
+  (not (cdr node)))
+
 (defun ptree--create-node (node tag)
-  "Add a child branch node with TAG in NODE.
-If the node already exist it is not modified.
-The function returns the created node."
+  "Add a child incomplete node with TAG in NODE.
+If the node already exists, the function returns it.
+Otherwise the function returns the created node."
   (let* ((cns (cddr node))
          (cn (car cns))
          (res nil))
@@ -485,6 +493,7 @@ The function returns the created node."
   "Create a path in accordance PATH-LIST starting from NODE.
 The path is constituted by branch nodes.
 Branch nodes already existing are not modified.
+The last node of the path is an incomplete node.
 The function returns the last node of the path."
   (while path-list
     (setq node (ptree--create-node node (car path-list)))
