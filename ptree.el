@@ -300,6 +300,16 @@ The child node is created with TAG and VALUE.
 If a child node with the specified tag already exists, it is overwritten."
   (ptree--make-leaf (ptree--create-node (car iterator) tag) value))
 
+(defun ptree-iter-add-child-and-move (iterator tag)
+  "Add child node to the node associated with ITERATOR and move to it.
+The child node is created with TAG.
+If the branch node exists, its child nodes are removed)
+If the node exists and it is a leaf node, it is transformed into a
+branch node."
+  (let ((child-node (ptree--create-node (car iterator) tag)))
+    (ptree--make-empty-branch child-node)
+    (ptree--iter-move-to-child-node iterator child-node)))
+
 (defun ptree-iter-delete-node (iterator)
   "Delete node associated with ITERATOR.
 If the node is a root node, it is not deleted.
