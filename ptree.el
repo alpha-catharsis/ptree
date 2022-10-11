@@ -243,13 +243,6 @@ If the node is a leaf node, its value is set to VALUE.
 If the node value has been set it returns 't, otherwise 'nil."
   (ptree-set-node-value (car iterator) value))
 
-(defun ptree-iter-add-value (iterator tag value)
-  "Add a child node with TAG and VALUE to the node associated with ITERATOR.
-If the child node already exists and is a branch node, it is transformed into
-a leaf node. If the child node already exists and is a leaf node, its value
-is overwritten."
-  (ptree-add-value-at-path (car iterator) tag value))
-
 (defun ptree-iter-move-down (iterator)
   "Move ITERATOR to the first child of the associated node.
 If a child node exists, ITERATOR is associated to the child node and 't
