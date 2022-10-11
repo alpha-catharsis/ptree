@@ -157,13 +157,13 @@
 
 (ert-deftest ptree-test-add-value-at-path ()
   (let ((pt (ptree-create)))
-    (ptree-add-value-at-path pt 42 "test")
+    (ptree-add-value-at-path pt "test" 42)
     (should (equal pt '(nil nil ("test" 42))))
-    (ptree-add-value-at-path pt 9 '(0 zero))
+    (ptree-add-value-at-path pt '(0 zero) 9)
     (should (equal pt '(nil nil (0 nil (zero 9)) ("test" 42))))
-    (ptree-add-value-at-path pt 3 '(0 zero))
+    (ptree-add-value-at-path pt '(0 zero) 3)
     (should (equal pt '(nil nil (0 nil (zero 3)) ("test" 42))))
-    (ptree-add-value-at-path pt nil "test2")
+    (ptree-add-value-at-path pt "test2" nil)
     (should (equal pt '(nil nil (0 nil (zero 3)) ("test" 42) ("test2" nil))))))
 
 (ert-deftest ptree-test-delete-child-nodes ()

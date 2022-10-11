@@ -155,7 +155,7 @@ The function returns the last node of the path."
     (ptree--make-empty-branch res)
     res))
 
-(defun ptree-add-value-at-path (node value path)
+(defun ptree-add-value-at-path (node path value)
   "Add a descendant leaf node of NODE with VALUE through PATH.
 PATH is the list of tags that shall be followed to reach the descendant node.
 If only one tag has to be specified, it is possible to set PATH to the value
@@ -334,7 +334,7 @@ Otherwise it returns 'nil."
         (dir 'down))
     (ptree-iter-move-down iter)
     (let ((enter-node t))
-      (while (ptree-iter-tag iter)
+      (while (not (eq (ptree-iter-node iter) node))
         (when enter-node
           (setq res (concat res (ptree--node-to-string
                                  (ptree-iter-node iter) level))))
