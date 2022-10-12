@@ -158,6 +158,17 @@ The function returns the last node of the path."
       (ptree--make-empty-branch res))
     res))
 
+(defun ptree-add-leaf-nodes (node &rest leaves-data)
+  "Add multiple leaf nodes to NODE, one for each item passed in LEAVES-DATA.
+LEAVES data is a list of pairs composed by node tag and value.
+If a tag refers to an existing branch node, it is transformed to a leaf
+node and its value is set to the specified value
+It a tag refers to an existing leaf node, it is value is overwritten."
+  (while leaves-data
+    (let ((node (ptree--create-node node (caar leaves-data))))
+      (ptree--make-leaf node (cadar leaves-data)))
+    (setq leaves-data (cdr leaves-data))))
+
 (defun ptree-add-leaf-at-path (node path value)
   "Add a descendant leaf node of NODE with VALUE through PATH.
 PATH is the list of tags that shall be followed to reach the descendant node.

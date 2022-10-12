@@ -165,6 +165,12 @@
     (ptree-add-branch-at-path pt '(0 1))
     (should (equal pt '(nil nil (0 nil (1 nil (2 nil (3 nil nil)))))))))
 
+(ert-deftest ptree-test-add-leaf-nodes ()
+  (let ((pt (list nil nil (list 0 nil nil) (list "test" 42))))
+    (ptree-add-leaf-nodes pt)
+    (should (equal pt '(nil nil (0 nil nil) ("test" 42))))
+    (ptree-add-leaf-nodes pt '(0 0) '(1 1) '(2 2) '("test" "xyz") '(one two))
+    (should (equal pt '(nil nil (0 0) (1 1) (2 2) (one two) ("test" "xyz"))))))
 
 (ert-deftest ptree-test-add-leaf-at-path ()
   (let ((pt (list nil nil nil)))
