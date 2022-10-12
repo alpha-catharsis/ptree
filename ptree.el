@@ -132,7 +132,7 @@ If the node value has been set it returns 't, otherwise 'nil."
     (setcdr node (list value))
     t))
 
-(defun ptree-add-child-nodes (node &rest child-tags)
+(defun ptree-add-branch-nodes (node &rest child-tags)
   "Add multiple branch nodes to NODE, one for each tag passed in CHILD-TAGS.
 If a tag refers to an existing branch node, it is not modified.
 It a tag refers to an existing leaf node, it is turned into a branch and its
@@ -143,7 +143,7 @@ associated value is lost."
         (ptree--make-empty-branch node)))
     (setq child-tags (cdr child-tags))))
 
-(defun ptree-add-node-at-path (node path)
+(defun ptree-add-branch-at-path (node path)
   "Add a descendant branch node of NODE through PATH.
 PATH is the list of tags that shall be followed to reach the descendant node.
 If only one tag has to be specified, it is possible to set PATH to the value
@@ -158,7 +158,7 @@ The function returns the last node of the path."
       (ptree--make-empty-branch res))
     res))
 
-(defun ptree-add-value-at-path (node path value)
+(defun ptree-add-leaf-at-path (node path value)
   "Add a descendant leaf node of NODE with VALUE through PATH.
 PATH is the list of tags that shall be followed to reach the descendant node.
 If only one tag has to be specified, it is possible to set PATH to the value
@@ -289,22 +289,22 @@ is returned. Otherwise ITERATOR is unchanged and 'nil is returned."
     (when prev-node (ptree--iter-move-to-sibling-node iterator prev-node))
     (consp prev-node)))
 
-(defun ptree-iter-add-child-nodes (iterator &rest child-tags)
+(defun ptree-iter-add-branch-nodes (iterator &rest child-tags)
   "Add multiple branch nodes to the node associated with ITERATOR.
 One node is added for each tag passed in CHILD-TAGS.
 If a tag refers to an existing branch node, it is not modified.
 It a tag refers to an existing leaf node, it is turned into a branch and its
 associated value is lost."
-  (apply #'ptree-add-child-nodes (car iterator) child-tags))
+  (apply #'ptree-add-branch-nodes (car iterator) child-tags))
 
-(defun ptree-iter-add-child-with-value (iterator tag value)
-  "Add child node to the node associated with ITERATOR.
+(defun ptree-iter-add-leaf (iterator tag value)
+  "Add child leaf node to the node associated with ITERATOR.
 The child node is created with TAG and VALUE.
 If a child node with the specified tag already exists, it is overwritten."
   (ptree--make-leaf (ptree--create-node (car iterator) tag) value))
 
-(defun ptree-iter-add-child-and-move (iterator tag)
-  "Add child node to the node associated with ITERATOR and move to it.
+(defun ptree-iter-add-branch-and-move (iterator tag)
+  "Add child branch node to the node associated with ITERATOR and move to it.
 The child node is created with TAG.
 If the branch node exists, it is not modified.
 If the node exists and it is a leaf node, it is transformed into a
