@@ -239,7 +239,7 @@ is returned. Otherwise ITERATOR is unchanged and 'nil is returned."
 If a child node exists, ITERATOR is associated to the child node and 't
 is returned. Otherwise ITERATOR is unchanged and 'nil is returned."
   (let ((child-list (cddar iterator)))
-    (if child-list
+    (if (and child-list (car child-list))
         (progn
           (ptree--iter-move-to-child-node iterator child-list)
           t)
