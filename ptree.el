@@ -44,10 +44,10 @@
 
 (defun ptree-create ()
   "Create an empty property tree.
-This function returns the root node of the property tree."
+The function returns the root node of the property tree."
   (list nil nil nil))
 
-;; Public predicates
+;; Public predicate functions
 
 (defun ptree-root-p (node)
   "Check if NODE is the root node of the property tree.
@@ -68,211 +68,182 @@ A leaf node has a tag and value associated, but cannot have child nodes.
 The function returns 't if NODE is a leaf node, otherwise 'nil."
   (null (cddr node)))
 
-;; Public accessors
+;; Public node accessor functions
 
-(defun ptree-get-node-tag (node)
+(defun ptree-tag (node)
   "Get the tag associated with NODE.
 If NODE is the root node, 'nil is returned."
   (car node))
 
-(defun ptree-get-node-value (node)
+(defun ptree-value (node)
   "Get the value associated with NODE.
 If NODE is not a leaf node, 'not-found is returned."
   (if (ptree-leaf-p node)
       (cadr node)
     'not-found))
 
-(defun ptree-get-child-nodes-num (node)
+(defun ptree-child-num (node)
   "Get the number of child nodes of NODE."
   (let ((child-nodes (cddr node)))
     (if (car child-nodes)
         (length child-nodes)
     0)))
 
-(defun ptree-get-child-node-at-index (node index)
+;; Public node retrieval functions
+
+(defun ptree-child-at-index (node index)
   "Get the child node of NODE at position INDEX.
 If INDEX is out of range, it returns 'nil."
   (nth index (cddr node)))
 
-(defun ptree-get-node-at-path (node path)
-  "Retrieve a descendant node of NODE through PATH.
+(defun ptree-node-at-path (node path)
+  "Get the descendant of NODE at PATH.
 PATH is the list of tags that shall be followed to reach the descendant node.
 If only one tag has to be specified, it is possible to set PATH to the value
-of the tag insead of passing PATH as the list of a single tag.
-If node at PATH does not exist, it returns 'nil."
-  (let ((path-list (ptree--get-path-as-list path)))
-    (while (and node path-list)
-      (setq node (ptree--get-node node (car path-list)))
-      (setq path-list (cdr path-list)))
-    node))
+of the tag instead of passing PATH as a list with a single tag.
+If PATH is nil, the descendant of NODE is NODE itself.
+If descendant node at PATH does not exist, the function returns 'nil."
+  (ptree--node-at-path node path))
 
-(defun ptree-get-value-at-path (node path)
-  "Retrieve the value of a descendant node of NODE through PATH.
+;; Public value retrieval functions
+
+(defun ptree-value-at-path (node path)
+  "Retrieve the value of the descendant of NODE at PATH.
 PATH is the list of tags that shall be followed to reach the descendant node.
 If only one tag has to be specified, it is possible to set PATH to the value
-of the tag insead of passing PATH as the list of a single tag.
-If node at PATH does no exist or if it is not a leaf node, it returns 'nil."
-  (let* ((path-list (ptree--get-path-as-list path)))
-    (setq node (ptree-get-node-at-path node path-list))
-    (if (and node (ptree-leaf-p node))
-        (ptree-get-node-value node)
+of the tag instead of passing PATH as a list with a single tag.
+If PATH is nil, the descendant of NODE is NODE itself.
+If the descendant node at PATH does no exist or if it is not a leaf node,
+the function returns 'not-found."
+  (let ((desc (ptree--node-at-path node path)))
+    (if (and desc (ptree-leaf-p desc))
+        (ptree-value desc)
       'not-found)))
 
-;; Public mutators
+;; Public value setting functions
 
-(defun ptree-set-node-value (node value)
-  "Set the value of NODE to VALUE.
-If NODE is the root node, its value is not set.
-If NODE is a branch node, it is transformed into a leaf node and its value
-is set to VALUE.
-If NODE is a leaf node, its value is set to VALUE.
-If the node value has been set it returns 't, otherwise 'nil."
-  (if (ptree-root-p node)
-      nil
-    (setcdr node (list value))
-    t))
-
-(defun ptree-add-branch-nodes (node &rest child-tags)
-  "Add multiple branch nodes to NODE, one for each tag passed in CHILD-TAGS.
-If a tag refers to an existing branch node, it is not modified.
-It a tag refers to an existing leaf node, it is turned into a branch and its
-associated value is lost."
-  (while child-tags
-    (let ((node (ptree--create-node node (car child-tags))))
-      (when (ptree--incomplete-p node)
-        (ptree--make-empty-branch node)))
-    (setq child-tags (cdr child-tags))))
-
-(defun ptree-add-branch-at-path (node path)
-  "Add a descendant branch node of NODE through PATH.
+(defun ptree-set-value-at-path (node path value)
+  "Set the value of the descendant of NODE at PATH to VALUE.
 PATH is the list of tags that shall be followed to reach the descendant node.
 If only one tag has to be specified, it is possible to set PATH to the value
-of the tag insead of passing PATH as the list of a single tag.
-If part of the path already exists it is not modified, but If the path runs
-through a leaf node, it is turned into a branch node to complete the
-specified path.
-The function returns the last node of the path."
-  (let* ((path-list (ptree--get-path-as-list path))
-         (res (ptree--create-path node path-list)))
-    (when (ptree--incomplete-p res)
-      (ptree--make-empty-branch res))
-    res))
+of the tag instead of passing PATH as a list with a single tag.
+If PATH is nil, the descendant of NODE is NODE itself.
+If any node but the last one in the path does not exist, it is created as
+branch node.
+If any node but the last one in the path is a leaf node, it is transformed
+into a branch node and its value is lost.
+If the descendant node is the root node, its value is not set.
+If the descendant node is a branch node, it is transformed in a leaf node
+before setting its value.
+If the descendant node value has been set, the function returns 't,
+otherwise 'nil."
+  (let ((desc (ptree--create-node-at-path node path)))
+    (if (ptree-root-p desc)
+        nil
+      (ptree--make-leaf desc value)
+      t)))
 
-(defun ptree-add-leaf-nodes (node &rest leaves-data)
-  "Add multiple leaf nodes to NODE, one for each item passed in LEAVES-DATA.
-LEAVES data is a list of pairs composed by node tag and value.
-If a tag refers to an existing branch node, it is transformed to a leaf
-node and its value is set to the specified value
-It a tag refers to an existing leaf node, it is value is overwritten."
-  (while leaves-data
-    (let ((node (ptree--create-node node (caar leaves-data))))
-      (ptree--make-leaf node (cadar leaves-data)))
-    (setq leaves-data (cdr leaves-data))))
+;; Public node setting functions
 
-(defun ptree-add-leaf-at-path (node path value)
-  "Add a descendant leaf node of NODE with VALUE through PATH.
+(defun ptree-set-branches-at-path (node path &rest child-tags)
+  "Add multiple branch nodes to the descendant of NODE at PATH.
 PATH is the list of tags that shall be followed to reach the descendant node.
 If only one tag has to be specified, it is possible to set PATH to the value
-of the tag insead of passing PATH as the list of a single tag.
-If part of the path already exists it is not modified, but If the path runs
-through a leaf node, it is turned into a branch node to complete the specified
-path. If the last node specified in PATH is a branch node, it
-is turned into a leaf node and its value is set to VALUE.
-This function returns the leaf node."
-  (let* ((path-list (ptree--get-path-as-list path))
-         (res (ptree--create-path node path-list)))
-    (ptree--make-leaf res value)
-    res))
+of the tag instead of passing PATH as a list with a single tag.
+If PATH is nil, the descendant of NODE is NODE itself.
+If any node in the path does not exist, it is created as branch node.
+If any node in the path is a leaf node, it is transformed into a branch node
+and its value is lost.
+A branch node is added to the descendant node for each tag passed in CHILD-TAGS.
+If the tag refers to an existing branch node, it is not modified.
+It the refers to an existing leaf node, it is turned into a branch and its
+associated value is lost.
+The function returns the node associated with the last child tag."
+  (let ((desc (ptree--create-node-at-path node path))
+        (last-child-node nil))
+    (while child-tags
+      (setq last-child-node (ptree--create-node desc (car child-tags)))
+      (when (ptree--incomplete-p last-child-node)
+        (ptree--make-empty-branch last-child-node))
+      (setq child-tags (cdr child-tags)))
+    last-child-node))
 
-(defun ptree-delete-child-nodes (node &rest child-tags)
-  "Delete multiple child nodes from NODE, one for each tag passed in CHILD-TAGS.
-If a node with the specified tag does not exist, the function stops and returns
-the list of tags associated to the child nodes that have not been deleted.
-Otherwise it returns 'nil."
-  (let ((in-progress t))
-    (while (and in-progress child-tags)
-      (if (not (ptree--delete-node node (car child-tags)))
-          (setq in-progress nil)
-        (setq child-tags (cdr child-tags))))
-  child-tags))
-
-(defun ptree-delete-node-at-path (node path)
-  "Delete a descendant node of NODE through PATH.
+(defun ptree-set-leaves-at-path (node path &rest leaves-data)
+  "Add multiple leaf nodes to the descendant of NODE at PATH.
 PATH is the list of tags that shall be followed to reach the descendant node.
 If only one tag has to be specified, it is possible to set PATH to the value
-of the tag insead of passing PATH as the list of a single tag.
-The function Returns the deleted node or 'nil if it the path does not exist."
-  (let ((path-list (ptree--get-path-as-list path)))
-    (while (and node (cdr path-list))
-      (setq node (ptree--get-node node (car path-list)))
-      (setq path-list (cdr path-list)))
-    (when node
-      (setq node (ptree--delete-node node (car path-list)))))
-    node)
+of the tag instead of passing PATH as a list with a single tag.
+If PATH is nil, the descendant of NODE is NODE itself.
+If any node but in the path does not exist, it is created as branch node.
+If any node in the path is a leaf node, it is transformed into a branch node
+and its value is lost.
+A leaf node is added to the descendant node for each item passed in LEAVES-DATA.
+LEAVES-DATA is a list of pairs containing the leaf node tag and value.
+If the node tag refers to an existing branch node, it is transformed to a leaf
+node before setting its value.
+It the node tag refers to an existing leaf node, it is value is overwritten.
+The function returns the node associated with the last leaf node tag."
+  (let ((desc (ptree--create-node-at-path node path))
+        (last-child-node nil))
+    (while leaves-data
+      (setq last-child-node (ptree--create-node desc (caar leaves-data)))
+      (ptree--make-leaf last-child-node (cadar leaves-data))
+      (setq leaves-data (cdr leaves-data)))
+    last-child-node))
+
+;; Public node deletion functions
+
+(defun ptree-delete-nodes-at-path (node path &rest child-tags)
+  "Delete multiple nodes that are the descendant of NODE at PATH.
+PATH is the list of tags that shall be followed to reach the descendant node.
+If only one tag has to be specified, it is possible to set PATH to the value
+of the tag instead of passing PATH as a list with a single tag.
+If PATH is nil, the descendant of NODE is NODE itself.
+A node is deleted from the descendant node for each tag passed in CHILD-TAGS.
+If a node cannot be deleted (cause it does not exist) the function stops
+and returns the list of tags associated with node that have not been deleted,
+otherwise the function returns 'nil."
+  (let ((desc (ptree--node-at-path node path)))
+    (if desc
+        (let ((in-progress t))
+          (while (and in-progress child-tags)
+            (if (not (ptree--delete-node desc (car child-tags)))
+                (setq in-progress nil)
+              (setq child-tags (cdr child-tags))))
+          child-tags))
+      child-tags))
 
 ;; Public interator functions
 
 (defun ptree-iter (node)
   "Create an iterator associated with NODE.
 NODE represent the initial node for the iterator.
-It is worth noting that The iterator cannot move to the parent node of the
-initial node."
+The iterator can only move down to the child nodes of the initial node.
+The iterator cannot move to the parent or sibling nodes of the initial node."
   (list node nil))
 
 (defun ptree-iter-node (iterator)
-  "Get the node associated with the ITERATOR."
+  "Get the node associated with ITERATOR."
   (car iterator))
-
-(defun ptree-iter-root-p (iterator)
-  "Check if the node associated with ITERATOR is the root node.
-The function returns 't if the node is the root node, 'nil otherwise."
-  (ptree-root-p (car iterator)))
-
-(defun ptree-iter-branch-p (iterator)
-  "Check if the node associated with ITERATOR is a branch node.
-The function returns 't if the node is a branch node, 'nil otherwise."
-  (ptree-branch-p (car iterator)))
-
-(defun ptree-iter-leaf-p (iterator)
-  "Check if the node associated with ITERATOR is a leaf node.
-The function retutns 't if the node is a leaf node, 'nil otherwise."
-  (ptree-leaf-p (car iterator)))
-
-(defun ptree-iter-tag (iterator)
-  "Get the tag of the node associated with ITERATOR.
-If the node is the root node, 'nil is returned."
-  (ptree-get-node-tag (car iterator)))
-
-(defun ptree-iter-value (iterator)
-  "Get the value of the node associated with ITERATOR.
-If the node is not a leaf node, 'not-found is returned."
-  (ptree-get-node-value (car iterator)))
-
-(defun ptree-iter-set-value (iterator value)
-  "Set the value of node associated with ITERATOR to VALUE.
-If the node is the root node, its value is not set.
-If the node is a branch node, it is transformed into a leaf node and its value
-is set to VALUE.
-If the node is a leaf node, its value is set to VALUE.
-If the node value has been set it returns 't, otherwise 'nil."
-  (ptree-set-node-value (car iterator) value))
-
-(defun ptree-iter-move-down (iterator)
-  "Move ITERATOR to the first child of the associated node.
-If a child node exists, ITERATOR is associated to the child node and 't
-is returned. Otherwise ITERATOR is unchanged and 'nil is returned."
-  (let ((child-node (ptree--get-first-child-node (car iterator))))
-    (when child-node
-        (ptree--iter-move-to-child-node iterator child-node))
-    (consp child-node)))
 
 (defun ptree-iter-move-to-tag (iterator tag)
   "Move ITERATOR to the child of the associated node with TAG.
 If such child node exists, ITERATOR is associated to the child node and 't
 is returned. Otherwise ITERATOR is unchanged and 'nil is returned."
-  (let ((child-node (ptree--get-node (car iterator) tag)))
-    (when child-node (ptree--iter-move-to-child-node iterator child-node))
-    (consp child-node)))
+  (let ((child-list (ptree--get-child-list (car iterator) tag)))
+    (when child-list (ptree--iter-move-to-child-node iterator child-list))
+    (consp child-list)))
+
+(defun ptree-iter-move-down (iterator)
+  "Move ITERATOR to the first child of the associated node.
+If a child node exists, ITERATOR is associated to the child node and 't
+is returned. Otherwise ITERATOR is unchanged and 'nil is returned."
+  (let ((child-list (cddar iterator)))
+    (if child-list
+        (progn
+          (ptree--iter-move-to-child-node iterator child-list)
+          t)
+      nil)))
 
 (defun ptree-iter-move-up (iterator)
   "Move the ITERATOR to the parent of the associated node.
@@ -286,33 +257,20 @@ is returned. Otherwise ITER is unchanged and 'nil is returned."
   "Move the ITERATOR to the next sibling node.
 If the sibling node exists, ITERATOR is associated to the sibling node and 't
 is returned. Otherwise ITERATOR is unchanged and 'nil is returned."
-  (let ((next-node (ptree--get-next-sibling-node (car iterator)
-                                                 (cadr iterator))))
-    (when next-node (ptree--iter-move-to-sibling-node iterator next-node))
-    (consp next-node)))
+  (if (cddr iterator)
+      (progn
+        (ptree--iter-move-to-next-node iterator)
+        t)
+    nil))
 
 (defun ptree-iter-move-previous (iterator)
   "Move the ITERATOR to the previous sibling node.
 If the sibling node exists, ITERATOR is associated to the sibling node and 't
 is returned. Otherwise ITERATOR is unchanged and 'nil is returned."
-  (let ((prev-node (ptree--get-previous-sibling-node (car iterator)
-                                                     (cadr iterator))))
-    (when prev-node (ptree--iter-move-to-sibling-node iterator prev-node))
-    (consp prev-node)))
-
-(defun ptree-iter-add-branch-nodes (iterator &rest child-tags)
-  "Add multiple branch nodes to the node associated with ITERATOR.
-One node is added for each tag passed in CHILD-TAGS.
-If a tag refers to an existing branch node, it is not modified.
-It a tag refers to an existing leaf node, it is turned into a branch and its
-associated value is lost."
-  (apply #'ptree-add-branch-nodes (car iterator) child-tags))
-
-(defun ptree-iter-add-leaf (iterator tag value)
-  "Add child leaf node to the node associated with ITERATOR.
-The child node is created with TAG and VALUE.
-If a child node with the specified tag already exists, it is overwritten."
-  (ptree--make-leaf (ptree--create-node (car iterator) tag) value))
+  (let ((prev-list (ptree--get-previous-sibling-list (car iterator)
+                                                     (caadr iterator))))
+    (when prev-list (ptree--iter-move-to-sibling-node iterator prev-list))
+    (consp prev-list)))
 
 (defun ptree-iter-add-branch-and-move (iterator tag)
   "Add child branch node to the node associated with ITERATOR and move to it.
@@ -320,10 +278,8 @@ The child node is created with TAG.
 If the branch node exists, it is not modified.
 If the node exists and it is a leaf node, it is transformed into a
 branch node."
-  (let ((child-node (ptree--create-node (car iterator) tag)))
-    (when (ptree--incomplete-p child-node)
-      (ptree--make-empty-branch child-node))
-    (ptree--iter-move-to-child-node iterator child-node)))
+  (ptree-set-branches-at-path (ptree-iter-node iterator) nil tag)
+  (ptree-iter-move-to-tag iterator tag))
 
 (defun ptree-iter-delete-node (iterator)
   "Delete node associated with ITERATOR.
@@ -331,7 +287,7 @@ If the node is a root node, it is not deleted.
 If the node is deleted, the iterator is moved to the next sibling of
 the deleted node when it exists. Otherwise it is move to the parent node.
 The function returns 't if the node is deleted, 'nil otherwise."
-  (let ((parent (cadr iterator)))
+  (let ((parent (caadr iterator)))
     (if parent
         (progn
           (let ((target-node (car iterator)))
@@ -341,52 +297,30 @@ The function returns 't if the node is deleted, 'nil otherwise."
             target-node))
       nil)))
 
-(defun ptree-iter-delete-child-nodes (iterator &rest child-tags)
-  "Delete multiple child nodes from the node associated with ITERATOR.
-One node is delted for each tag passed in CHILD-TAGS.
-If a node with the specified tag does not exist, the function stops and returns
-the list of tags associated to the child nodes that have not been deleted.
-Otherwise it returns 'nil."
-  (apply #'ptree-delete-child-nodes (car iterator) child-tags))
-
 ;; Public conversion function
 
 (defun ptree-to-string (node)
   "Convert NODE to string."
   (let ((res "")
         (iter (ptree-iter node))
-        (level 0)
-        (dir 'down))
+        (level 0))
     (ptree-iter-move-down iter)
-    (let ((enter-node t))
-      (while (not (eq (ptree-iter-node iter) node))
-        (when enter-node
-          (setq res (concat res (ptree--node-to-string
-                                 (ptree-iter-node iter) level))))
-        (setq enter-node nil)
-        (cond ((eq dir 'down)
-               (if (not (ptree-iter-move-down iter))
-                   (setq dir 'next)
-                 (setq enter-node t)
-                 (setq level (+ level 1))))
-              ((eq dir 'next)
-               (if (not (ptree-iter-move-next iter))
-                   (setq dir 'up)
-                 (setq enter-node t)
-                 (setq dir 'down)))
-              (t
-               (when (ptree-iter-move-up iter)
-                 (setq level (- level 1))
-                 (setq dir 'next))))))
+    (while (not (eq (ptree-iter-node iter) node))
+      (setq res (concat res (ptree--node-to-string
+                             (ptree-iter-node iter) level)))
+      (if (ptree-iter-move-down iter)
+          (setq level (+ level 1))
+        (unless (ptree-iter-move-next iter)
+          (let ((in-progress t))
+            (while in-progress
+              (if (ptree-iter-move-up iter)
+                  (setq level (- level 1))
+                (setq in-progress nil))
+              (when (ptree-iter-move-next iter)
+                (setq in-progress nil)))))))
     res))
 
 ;; Internal functions
-
-(defun ptree--get-path-as-list (path)
-  "Get PATH as list."
-  (if (listp path)
-      path
-    (list path)))
 
 (defun ptree--compare-tags (ltag rtag)
   "Copares LTAG with RTAG.
@@ -418,7 +352,7 @@ equal to RTAG, 'gt if LTAG is greater than RTAG, 'empty if RTAG is 'nil."
                           ((string= ltag rtag) 'eq)
                           (t 'gt)))))))
 
-(defun ptree--get-node (node tag)
+(defun ptree--get-child (node tag)
   "Get child node of NODE with TAG.
 The function returns 'nil if such child node does not exist."
   (let* ((cns (cddr node))
@@ -431,29 +365,34 @@ The function returns 'nil if such child node does not exist."
         (setq cn (car cns))))
     res))
 
-(defun ptree--get-first-child-node (node)
-  "Return the first child node of NODE.
+(defun ptree--get-child-list (node tag)
+  "Get the list of child nodes of NODE starting with node with TAG.
 The function returns 'nil if such child node does not exist."
-  (caddr node))
-
-(defun ptree--get-next-sibling-node (node parent)
-  "Return the next sibling of NODE with PARENT.
-The function returns 'nil if such child node does not exist."
-  (let* ((cns (cddr parent))
+  (let* ((cns (cddr node))
          (cn (car cns))
          (res nil))
-    (while cn
-      (if (eq cn node)
-          (progn
-            (setq res (cadr cns))
-            (setq cn nil))
+    (while (and cn (not res))
+      (if (eq (ptree--compare-tags tag (car cn)) 'eq)
+          (setq res cns)
         (setq cns (cdr cns))
         (setq cn (car cns))))
     res))
 
-(defun ptree--get-previous-sibling-node (node parent)
-  "Return the previous sibling of NODE with PARENT.
-The function returns 'nil if such child node does not exist."
+(defun ptree--node-at-path (node path)
+  "Get the descendant of NODE at PATH.
+If the descendant node does not exist, 'nil is returned."
+  (let ((path-list (if (listp path)
+                       path
+                     (list path))))
+    (while (and node path-list)
+      (let ((child (ptree--get-child node (car path-list))))
+        (setq path-list (cdr path-list))
+        (setq node child))))
+    node)
+
+(defun ptree--get-previous-sibling-list (node parent)
+  "Get the list of siblings starting from the node before NODE with PARENT.
+The function returns 'nil if the previous node does not exist."
   (let* ((cns (cddr parent))
          (pcns nil)
          (cn (car cns))
@@ -461,7 +400,7 @@ The function returns 'nil if such child node does not exist."
     (while cn
       (if (eq cn node)
           (progn
-            (setq res (car pcns))
+            (setq res pcns)
             (setq cn nil))
         (setq pcns cns)
         (setq cns (cdr cns))
@@ -482,8 +421,8 @@ The function returns 'nil if such child node does not exist."
 
 (defun ptree--create-node (node tag)
   "Add a child incomplete node with TAG in NODE.
-If the node already exists, the function returns it.
-Otherwise the function returns the created node."
+If the node already exists, the function returns it instead of creating
+a new incomplete node"
   (let* ((cns (cddr node))
          (cn (car cns))
          (res nil))
@@ -500,20 +439,26 @@ Otherwise the function returns the created node."
                    (setcar cns res))))))
     res))
 
-(defun ptree--create-path (node path-list)
-  "Create a path in accordance PATH-LIST starting from NODE.
-The path is constituted by branch nodes.
-Branch nodes already existing are not modified.
-The last node of the path is an incomplete node.
-The function returns the last node of the path."
-  (while path-list
-    (setq node (ptree--create-node node (car path-list)))
-    (setq path-list (cdr path-list)))
-  node)
+(defun ptree--create-node-at-path (node path)
+  "Add an incomplete descendent node of NODE at PATH.
+If nodes in the path do not exist, they are created.
+If the descendent node already exists, the function returns it instead of
+creating a new incomplete node.
+The function returns the descendent node."
+  (let ((path-list (if (listp path)
+                       path
+                     (list path))))
+    (while (and node path-list)
+      (let ((child (ptree--create-node node (car path-list))))
+        (when (ptree--incomplete-p child)
+          (ptree--make-empty-branch child))
+        (setq path-list (cdr path-list))
+        (setq node child))))
+    node)
 
 (defun ptree--delete-node (node tag)
   "Delete child node with TAG from NODE.
-The function returns the deleted node or  'nil if such child node does
+The function returns the deleted node or 'nil if such child node does
 not exist."
   (let* ((cns (cddr node))
          (pcns nil)
@@ -559,17 +504,28 @@ The function returns the deleted node."
 
 (defun ptree--iter-move-to-parent-node (iterator)
   "Move the iterator ITERATOR to the parent node."
-  (setcar iterator (cadr iterator))
-  (setcdr iterator (cddr iterator)))
+  (setcar iterator (caadr iterator))
+  (setcdr iterator (cdadr iterator)))
 
-(defun ptree--iter-move-to-child-node (iterator child-node)
-  "Move the iterator ITERATOR to the CHILD-NODE."
-  (setcdr iterator (cons (car iterator) (cdr iterator)))
-  (setcar iterator child-node))
+(defun ptree--iter-move-to-child-node (iterator child-list)
+  "Move the iterator ITERATOR to the first node of CHILD-LIST.
+The rest of the elements of CHILD-LIST refers to the successive nodes."
+  (setcdr iterator
+          (cons (cons (car iterator) (cdr iterator)) (cdr child-list)))
+  (setcar iterator (car child-list)))
 
-(defun ptree--iter-move-to-sibling-node (iterator sibling-node)
-  "Move the iterator ITERATOR to the SIBLING-NODE."
-  (setcar iterator sibling-node))
+(defun ptree--iter-move-to-next-node (iterator)
+  "Move the iterator ITERATOR to the next sibling node."
+  (setcar iterator (caddr iterator))
+  (setcdr iterator (cons (cadr iterator) (cdddr iterator))))
+
+(defun ptree--iter-move-to-sibling-node (iterator sibling-list)
+  "Move the iterator ITERATOR to the first node of SIBLING-LIST.
+The rest of the elements of CHILD-LIST refers to the successive nodes."
+  (setcar iterator (car sibling-list))
+  (setcdr iterator (cons
+                    (cadr iterator)
+                    (cdr sibling-list))))
 
 (defun ptree--tag-to-string (tag)
   "Convert TAG to string."
@@ -579,10 +535,10 @@ The function returns the deleted node."
 
 (defun ptree--node-to-string (node level)
   "Convert NODE at LEVEL to string."
-  (let ((tag-str (ptree--tag-to-string (ptree-get-node-tag node)))
+  (let ((tag-str (ptree--tag-to-string (ptree-tag node)))
         (indent-str (make-string (* 2 level) ?\s)))
        (if (ptree-leaf-p node)
-           (format "%s%s: %s\n" indent-str tag-str (ptree-get-node-value node))
+           (format "%s%s: %s\n" indent-str tag-str (ptree-value node))
     (format "%s%s\n" indent-str tag-str))))
 
 ;; Package provision
