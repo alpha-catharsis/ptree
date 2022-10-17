@@ -435,7 +435,7 @@ a new incomplete node"
           (cond ((eq cmp 'gt) (setcdr cns (list res)))
                 ((eq cmp 'empty) (setcdr node (list nil res)))
                 ((eq cmp 'eq) (setq res cn))
-                (t (setcdr cns (cons cn (cddr cns)))
+                (t (setcdr cns (cons cn (cdr cns)))
                    (setcar cns res))))))
     res))
 

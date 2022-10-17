@@ -198,7 +198,14 @@
                             (1 nil (2 nil (3 "a")) (6 one))
                             (2 nil (one nil (3 nil (4 "b")
                                                (5 "c")
-                                               (6 "d")))))))))
+                                               (6 "d"))))))))
+  (let ((pt (list nil nil (list 'a0 nil (list 'b0 0) (list 'b1 1)))))
+    (should (equal (ptree-set-leaves-at-path pt '(a0 0 c0) '(d0 0) '(d1 1))
+                   '(d1 1)))
+    (should (equal pt '(nil nil (a0 nil (0 nil (c0 nil (d0 0) (d1 1)))
+                                    (b0 0) (b1 1)))))
+    ))
+
 
 (ert-deftest ptree-test-delete-nodes-at-path ()
   (let ((pt (list nil nil (list 0 42)
