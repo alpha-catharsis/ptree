@@ -162,6 +162,19 @@ If descendant node at PATH does not exist, the function returns 'nil."
     (setq path (list path)))
   (ptree--node-at-path node path))
 
+(defun ptree-value-at-path (node path)
+  "Get the value of descendat property of NODE at PATH.
+PATH is the list of tags that shall be followed to reach the descendant node.
+If only one tag has to be specified, it is possible to set PATH to the value
+of the tag instead of passing PATH as a list with a single tag.
+If PATH is nil, the descendant of NODE is NODE itself.
+If descendant node at PATH does not exist or if it is not a property,
+'not-found is returned."
+  (setq node (ptree-node-at-path node path))
+  (if (or (not node) (ptree-category-p node))
+      'not-found
+    (ptree-property-value node)))
+
 (defun ptree-write-categories-at-path (node path &rest tags)
   "Create categories as child nodes of NODE at PATH.
 TAGS the list of tags of the categories to be created.
