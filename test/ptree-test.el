@@ -158,6 +158,17 @@
     (should (equal root '(nil 0 (generic . 42) test (generic . abc) "test"
                               (nil "test2" (nil)))))))
 
+(ert-deftest ptree-test-attach-node ()
+  (should-error (ptree-attach-node '(generic 42) 'test '(nil))
+                :type 'ptree-not-a-category)
+  (let ((child '(nil "test2" (generic 42)))
+        (root (list nil 0 '(nil) "test" '(string "aaa"))))
+    (should-error (ptree-attach-node root "test" child)
+                  :type 'ptree-node-already-existing)
+    (ptree-attach-node root 'test child)
+    (should (equal root '(nil 0 (nil) test (nil "test2" (generic 42))
+                              "test" (string "aaa"))))))
+
 (ert-deftest ptree-test-delete-child-node ()
   (should-error (ptree-delete-child-node '(generic . 42) "test")
                 :type 'ptree-not-a-category)
@@ -299,151 +310,301 @@
                    '(generic . 9)))
     (should (equal root '(nil "test" (nil 0 (generic . 9)))))))
 
-
-
-;; (ert-deftest ptree-test-set-value-at-path ()
-;;   (let ((pt (list nil nil nil)))
-;;     (should (eq (ptree-set-value-at-path pt nil 42) nil))
-;;     (should (equal pt '(nil nil nil))))
-;;   (let ((pt (list "test" nil (list 'one 9) (list 'zero 3))))
-;;     (should (eq (ptree-set-value-at-path pt nil 42) t))
-;;     (should (equal pt '("test" 42))))
-;;   (let ((pt (list "test" 42)))
-;;     (should (eq (ptree-set-value-at-path pt nil 9) t))
-;;     (should (equal pt '("test" 9)))
-;;     (should (eq (ptree-set-value-at-path pt 0 "a") t))
-;;     (should (equal pt '("test" nil (0 "a")))))
-;;   (let ((pt (list "test" nil
-;;                   (list 'one nil (list 'zero nil nil))
-;;                   (list 'zero 3))))
-;;     (should (eq (ptree-set-value-at-path pt 'zero 42) t))
-;;     (should (equal pt '("test" nil (one nil (zero nil nil)) (zero 42))))
-;;     (should (eq (ptree-set-value-at-path pt '(one zero) 9) t))
-;;     (should (equal pt '("test" nil (one nil (zero 9)) (zero 42))))
-;;     (should (eq (ptree-set-value-at-path pt 'one 3) t))
-;;     (should (equal pt '("test" nil (one 3) (zero 42)))))
-;;   (let ((pt (list nil nil nil)))
-;;     (should (eq (ptree-set-value-at-path pt '(0 1 2) 42) t))
-;;     (should (equal pt '(nil nil (0 nil (1 nil (2 42))))))))
-
-;; (ert-deftest ptree-test-set-branches-at-path ()
-;;   (let ((pt (list nil nil nil)))
-;;     (should (eq (ptree-set-branches-at-path pt nil) nil))
-;;     (should (equal pt '(nil nil nil)))
-;;     (should (equal (ptree-set-branches-at-path pt nil "zero" 0 'zero)
-;;                    '(zero nil nil)))
-;;     (should (equal pt '(nil nil (0 nil nil) (zero nil nil) ("zero" nil nil))))
-;;     (should (equal (ptree-set-branches-at-path pt nil "zero" 0 'zero)
-;;                    '(zero nil nil)))
-;;     (should (equal pt '(nil nil (0 nil nil) (zero nil nil) ("zero" nil nil)))))
-;;   (let ((pt (list nil nil nil)))
-;;     (should (equal (ptree-set-branches-at-path pt nil 0 0 0 0 0 0 0 0)
-;;                    '(0 nil nil)))
-;;     (should (equal pt '(nil nil (0 nil nil))))
-;;     (should (equal (ptree-set-branches-at-path pt 0 1 2 3)
-;;                    '(3 nil nil)))
-;;     (should (equal pt '(nil nil (0 nil (1 nil nil) (2 nil nil) (3 nil nil)))))
-;;     (should (equal (ptree-set-branches-at-path pt '(0 2) "a" "b")
-;;                    '("b" nil nil)))
-;;     (should (equal pt '(nil nil (0 nil (1 nil nil) (2 nil
-;;                                                       ("a" nil nil)
-;;                                                       ("b" nil nil))
-;;                                    (3 nil nil)))))
-;;     (should (equal (ptree-set-branches-at-path pt 0 2)
-;;                    '(2 nil ("a" nil nil) ("b" nil nil))))
-;;     (should (equal pt '(nil nil (0 nil (1 nil nil) (2 nil
-;;                                                       ("a" nil nil)
-;;                                                       ("b" nil nil))
-;;                                    (3 nil nil))))))
-;;   (let ((pt (list nil nil (list 'one nil (list 0 42)))))
-;;     (should (equal (ptree-set-branches-at-path pt '(one 0 "t") 'zero 'two)
-;;                    '(two nil nil)))
-;;     (should (equal pt '(nil nil (one nil (0 nil ("t" nil (two nil nil)
-;;                                                  (zero nil nil)))))))))
-
-;; (ert-deftest ptree-test-set-leaves-at-path ()
-;;   (let ((pt (list nil nil (list 0 nil nil) (list "test" 42))))
-;;     (should (eq (ptree-set-leaves-at-path pt nil) nil))
-;;     (should (equal pt '(nil nil (0 nil nil) ("test" 42))))
-;;     (should (equal (ptree-set-leaves-at-path pt nil '(0 0) '(1 1) '(2 2)
-;;                                              '("test" "xyz") '(one two))
-;;                    '(one two)))
-;;     (should (equal pt '(nil nil (0 0) (1 1) (2 2) (one two) ("test" "xyz")))))
-;;   (let ((pt (list nil nil (list 0 nil nil) (list 1 42)
-;;                   (list 2 nil (list 'one 9)))))
-;;     (should (equal (ptree-set-leaves-at-path pt 0 '(5 "test"))
-;;                    '(5 "test")))
-;;     (should (equal pt '(nil nil (0 nil (5 "test")) (1 42) (2 nil (one 9)))))
-;;     (should (equal (ptree-set-leaves-at-path pt 1 '(6 one))
-;;                    '(6 one)))
-;;     (should (equal pt '(nil nil (0 nil (5 "test")) (1 nil (6 one))
-;;                             (2 nil (one 9)))))
-;;     (should (equal (ptree-set-leaves-at-path pt '(1 2) '(3 "a"))
-;;                    '(3 "a")))
-;;     (should (equal pt '(nil nil (0 nil (5 "test"))
-;;                             (1 nil (2 nil (3 "a")) (6 one))
-;;                             (2 nil (one 9)))))
-;;     (should (equal (ptree-set-leaves-at-path pt '(2 one 3) '(4 "b") '(5 "c")
-;;                                              '(6 "d"))
-;;                    '(6 "d")))
-;;     (should (equal pt '(nil nil (0 nil (5 "test"))
-;;                             (1 nil (2 nil (3 "a")) (6 one))
-;;                             (2 nil (one nil (3 nil (4 "b")
-;;                                                (5 "c")
-;;                                                (6 "d"))))))))
-;;   (let ((pt (list nil nil (list 'a0 nil (list 'b0 0) (list 'b1 1)))))
-;;     (should (equal (ptree-set-leaves-at-path pt '(a0 0 c0) '(d0 0) '(d1 1))
-;;                    '(d1 1)))
-;;     (should (equal pt '(nil nil (a0 nil (0 nil (c0 nil (d0 0) (d1 1)))
-;;                                     (b0 0) (b1 1)))))
-;;     ))
-
-
-;; (ert-deftest ptree-test-delete-nodes-at-path ()
-;;   (let ((pt (list nil nil (list 0 42)
-;;                   (list 'zero nil (list "zero" 9))
-;;                   (list "one" nil)
-;;                   (list "zero" nil (list 0 nil (list 'zero 3))))))
-;;     (should (equal (ptree-delete-nodes-at-path pt nil 'one) '(one)))
-;;     (should (equal (ptree-delete-nodes-at-path pt nil 1) '(1)))
-;;     (should (equal (ptree-delete-nodes-at-path pt nil "two") '("two")))
-;;     (should (eq (ptree-delete-nodes-at-path pt nil) nil))
-;;     (should (equal pt '(nil nil (0 42) (zero nil ("zero" 9))
-;;                             ("one" nil)
-;;                             ("zero" nil (0 nil (zero 3))))))
-;;     (should (eq (ptree-delete-nodes-at-path pt nil "zero") nil))
-;;     (should (equal pt '(nil nil (0 42) (zero nil ("zero" 9))
-;;                             ("one" nil))))
-;;     (should (eq (ptree-delete-nodes-at-path pt nil "one") nil))
-;;     (should (equal pt '(nil nil (0 42) (zero nil ("zero" 9)))))
-;;     (should (eq (ptree-delete-nodes-at-path pt nil 0 'zero) nil))
-;;     (should (equal pt '(nil nil nil))))
-;;   (let ((pt (list nil nil (list 0 42)
-;;                   (list 'zero nil (list "zero" 9))
-;;                   (list "one" nil)
-;;                   (list "zero" nil (list 0 nil (list 'zero 3))))))
-;;     (should (equal (ptree-delete-nodes-at-path pt '("zero" 0) 'zero 'one)
-;;                 '(one)))
-;;     (should (equal pt '(nil nil (0 42) (zero nil ("zero" 9)) ("one" nil)
-;;                             ("zero" nil (0 nil nil)))))
-;;     (should (eq (ptree-delete-nodes-at-path pt 'zero "zero") nil))
-;;     (should (equal pt '(nil nil (0 42) (zero nil nil) ("one" nil)
-;;                             ("zero" nil (0 nil nil)))))
-;;     (should (eq (ptree-delete-nodes-at-path pt nil 0 'zero "one" "zero") nil))
-;;     (should (equal pt '(nil nil nil)))))
-
 ;; ;; Property tree iterator tests
 
-;; (ert-deftest ptree-test-iter ()
-;;   (let* ((pt '("test" nil (zero 42) (one 9) (two 3)))
-;;          (iter (ptree-iter pt)))
-;;     (should (eq (car iter) pt))
-;;     (should (equal (cdr iter) '(nil)))))
+(ert-deftest ptree-test-iter ()
+  (let* ((root '("test" nil zero (generic . 42) "one" (number . 9)
+                 "two" (currency . 3)))
+         (iter (ptree-iter root)))
+    (should (eq (cadr iter) root))
+    (should (equal iter (list nil root nil nil)))))
 
-;; (ert-deftest ptree-test-iter-node ()
-;;   (let* ((pt '("test" nil (zero 42)))
-;;          (iter (ptree-iter pt)))
-;;     (should (eq (ptree-iter-node iter) pt))))
+(ert-deftest ptree-test-iter-node ()
+  (let* ((root '("test" nil zero (generic . 42) "one" (number . 9)
+                 "two" (currency . 3)))
+         (iter (ptree-iter root)))
+    (should (eq (ptree-iter-node iter) root))))
+
+(ert-deftest ptree-test-iter-down ()
+  (let* ((root '(generic 42))
+         (iter (ptree-iter root)))
+    (should (eq (ptree-iter-down iter) 1))
+    (should (equal iter '(nil (generic 42) nil nil ))))
+  (let* ((root '(nil))
+         (iter (ptree-iter root)))
+    (should (eq (ptree-iter-down iter) 1))
+    (should (equal iter '(nil (nil) nil nil))))
+  (let* ((root '(nil 0 (generic 42) test (nil)))
+         (iter (ptree-iter root)))
+    (should (eq (ptree-iter-down iter) 0))
+    (should (equal iter '(0 (generic 42) ((nil (nil 0 (generic 42)
+                                                    test (nil)) nil nil))
+                            (test (nil))))))
+  (let* ((root '(nil 0 (generic 42) test (nil)))
+         (iter (ptree-iter root)))
+    (should (eq (ptree-iter-down iter 3) 2))
+    (should (equal iter '(0 (generic 42) ((nil (nil 0 (generic 42)
+                                                    test (nil)) nil nil))
+                            (test (nil))))))
+  (let* ((root '(nil 0 (nil 1 (generic 42))))
+         (iter (ptree-iter root)))
+    (should (eq (ptree-iter-down iter 2) 0))
+    (should (equal iter '(1
+                          (generic 42)
+                          ((0
+                            (nil 1 (generic 42))
+                            ((nil (nil 0 (nil 1 (generic 42))) nil nil))
+                            nil)
+                           (nil
+                            (nil 0 (nil 1 (generic 42)))
+                            nil
+                            nil))
+                          nil))))
+  (let* ((root '(nil 0 (nil 1 (generic 42))))
+         (iter (ptree-iter root)))
+    (should (eq (ptree-iter-down iter 5) 3))
+    (should (equal iter '(1
+                          (generic 42)
+                          ((0
+                            (nil 1 (generic 42))
+                            ((nil (nil 0 (nil 1 (generic 42))) nil nil))
+                            nil)
+                           (nil
+                            (nil 0 (nil 1 (generic 42)))
+                            nil
+                            nil))
+                          nil))))
+  (let* ((root '(nil 1 (nil 10 (nil 100 (generic 42)) 11 (nil))
+                     2 (number 9)))
+         (iter (ptree-iter root)))
+    (should (eq (ptree-iter-down iter 2) 0))
+    (should (equal iter '(10
+                          (nil 100 (generic 42))
+                          ((1
+                            (nil 10 (nil 100 (generic 42)) 11 (nil))
+                            ((nil
+                              (nil
+                               1
+                               (nil 10 (nil 100 (generic 42)) 11 (nil))
+                               2
+                               (number 9))
+                              nil
+                              nil))
+                            (2 (number 9)))
+                           (nil
+                            (nil
+                             1
+                             (nil 10 (nil 100 (generic 42)) 11 (nil))
+                             2
+                             (number 9))
+                            nil
+                            nil))
+                          (11 (nil)))))))
+
+(ert-deftest ptree-test-iter-up ()
+  (let* ((root '(nil))
+         (iter (ptree-iter root)))
+    (should (eq (ptree-iter-up iter) 1))
+    (should (equal iter '(nil (nil) nil nil))))
+  (let* ((iter (list
+                0
+                (list 'generic 42)
+                (list (list nil
+                            (list nil 0 (list 'generic 42) 'test (list nil))
+                            nil
+                            nil))
+                (list 'test (list nil)))))
+    (should (eq (ptree-iter-up iter) 0))
+    (should (equal iter '(nil (nil 0 (generic 42) test (nil)) nil nil))))
+  (let* ((iter (list
+                0
+                (list 'generic 42)
+                (list (list nil
+                            (list nil 0 (list 'generic 42) 'test (list nil))
+                            nil
+                            nil))
+                (list 'test (list nil)))))
+    (should (eq (ptree-iter-up iter 3) 2))
+    (should (equal iter '(nil (nil 0 (generic 42) test (nil)) nil nil))))
+  (let* ((root '(nil 1 (nil 11 (nil 111 (generic 42) 112 (string "aaa"))
+                            12 (nil 121 (number 9)))
+                     2 (string "test")))
+         (iter (ptree-iter root))
+         (iter-0 iter)
+         (iter-1 nil)
+         (iter-2 nil))
+    (ptree-iter-down iter)
+    (setq iter-1 iter)
+    (ptree-iter-down iter)
+    (setq iter-2 iter)
+    (ptree-iter-down iter)
+    (ptree-iter-up iter)
+    (should (equal iter iter-2))
+    (ptree-iter-up iter)
+    (should (equal iter iter-1))
+    (ptree-iter-up iter)
+    (should (equal iter iter-0))))
+
+(ert-deftest ptree-test-iter-next ()
+  (let* ((root '(nil))
+         (iter (ptree-iter root)))
+    (should (eq (ptree-iter-next iter) 1))
+    (should (equal iter '(nil (nil) nil nil))))
+  (let* ((root '(nil 0 (nil) 1 (generic 42) 2 (string "aaa")))
+         (iter (ptree-iter root)))
+    (ptree-iter-down iter)
+    (should (eq (ptree-iter-next iter) 0))
+    (should (equal iter '(1
+                          (generic 42)
+                          ((nil
+                            (nil 0 (nil) 1 (generic 42) 2 (string "aaa"))
+                            nil
+                            nil))
+                          (2 (string "aaa"))
+                          (nil)
+                          0)))
+    (should (eq (ptree-iter-next iter) 0))
+    (should (equal iter '(2
+                          (string "aaa")
+                          ((nil
+                            (nil 0 (nil) 1 (generic 42) 2 (string "aaa"))
+                            nil
+                            nil))
+                          nil
+                          (generic 42)
+                          1
+                          (nil)
+                          0)))
+    (should (eq (ptree-iter-next iter 3) 3))
+    (should (equal iter '(2
+                          (string "aaa")
+                          ((nil
+                            (nil 0 (nil) 1 (generic 42) 2 (string "aaa"))
+                            nil
+                            nil))
+                          nil
+                          (generic 42)
+                          1
+                          (nil)
+                          0))))
+  (let* ((root '(nil 0 (nil 1 (nil 11 (nil))
+                            2 (nil 21 (generic 42))
+                            3 (nil 31 (string "aaa")))))
+         (iter (ptree-iter root)))
+    (ptree-iter-down iter 2)
+    (should (eq (ptree-iter-next iter 2) 0))
+    (should (equal iter '(3
+                          (nil 31 (string "aaa"))
+                          ((0
+                            (nil 1 (nil 11 (nil))
+                                 2 (nil 21 (generic 42))
+                                 3 (nil 31 (string "aaa")))
+                            ((nil
+                              (nil 0 (nil 1 (nil 11 (nil))
+                                          2 (nil 21 (generic 42))
+                                          3 (nil 31 (string "aaa"))))
+                              nil
+                              nil))
+                            nil)
+                           (nil
+                            (nil
+                             0 (nil 1 (nil 11 (nil))
+                                    2 (nil 21 (generic 42))
+                                    3 (nil 31 (string "aaa"))))
+                            nil
+                            nil))
+                          nil
+                          (nil 21 (generic 42)) 2
+                          (nil 11 (nil)) 1)))))
+
+(ert-deftest ptree-test-iter-previous ()
+  (let* ((root '(nil))
+         (iter (ptree-iter root)))
+    (should (eq (ptree-iter-previous iter) 1))
+    (should (equal iter '(nil (nil) nil nil))))
+  (let* ((root '(nil 0 (nil) 1 (generic 42) 2 (string "aaa")))
+         (iter (ptree-iter root)))
+    (ptree-iter-down iter)
+    (ptree-iter-next iter 2)
+    (should (eq (ptree-iter-previous iter) 0))
+    (should (equal iter '(1
+                          (generic 42)
+                          ((nil
+                            (nil 0 (nil) 1 (generic 42) 2 (string "aaa"))
+                            nil
+                            nil))
+                          (2 (string "aaa"))
+                          (nil)
+                          0)))
+    (should (eq (ptree-iter-previous iter) 0))
+    (should (equal iter '(0
+                          (nil)
+                          ((nil
+                            (nil 0 (nil) 1 (generic 42) 2 (string "aaa"))
+                            nil
+                            nil))
+                          (1 (generic 42) 2 (string "aaa")))))
+    (should (eq (ptree-iter-previous iter 3) 3))
+    (should (equal iter '(0
+                          (nil)
+                          ((nil
+                            (nil 0 (nil) 1 (generic 42) 2 (string "aaa"))
+                            nil
+                            nil))
+                          (1 (generic 42) 2 (string "aaa"))))))
+
+  (let* ((root '(nil 0 (nil 1 (nil 11 (nil))
+                            2 (nil 21 (generic 42))
+                            3 (nil 31 (string "aaa")))))
+         (iter (ptree-iter root)))
+    (ptree-iter-down iter 2)
+    (ptree-iter-next iter 2)
+    (should (eq (ptree-iter-previous iter) 0))
+    (should (equal iter '(2
+                          (nil 21 (generic 42))
+                          ((0
+                            (nil 1 (nil 11 (nil))
+                                 2 (nil 21 (generic 42))
+                                 3 (nil 31 (string "aaa")))
+                            ((nil
+                              (nil 0 (nil 1 (nil 11 (nil))
+                                          2 (nil 21 (generic 42))
+                                          3 (nil 31 (string "aaa"))))
+                              nil
+                              nil))
+                            nil)
+                           (nil
+                            (nil
+                             0 (nil 1 (nil 11 (nil))
+                                    2 (nil 21 (generic 42))
+                                    3 (nil 31 (string "aaa"))))
+                            nil
+                            nil))
+                          (3 (nil 31 (string "aaa")))
+                          (nil 11 (nil)) 1)))
+    (should (eq (ptree-iter-previous iter) 0))
+    (should (equal iter '(1
+                          (nil 11 (nil))
+                          ((0
+                            (nil 1 (nil 11 (nil))
+                                 2 (nil 21 (generic 42))
+                                 3 (nil 31 (string "aaa")))
+                            ((nil
+                              (nil 0 (nil 1 (nil 11 (nil))
+                                          2 (nil 21 (generic 42))
+                                          3 (nil 31 (string "aaa"))))
+                              nil
+                              nil))
+                            nil)
+                           (nil
+                            (nil
+                             0 (nil 1 (nil 11 (nil))
+                                    2 (nil 21 (generic 42))
+                                    3 (nil 31 (string "aaa"))))
+                            nil
+                            nil))
+                          (2 (nil 21 (generic 42))
+                             3 (nil 31 (string "aaa"))))))))
 
 ;; (ert-deftest ptree-test-iter-move-to-tag ()
 ;;   (let* ((child-3 '(zero 42))
