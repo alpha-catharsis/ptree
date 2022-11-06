@@ -916,8 +916,6 @@ the property tree at NODE, indenting each tree level by INDENT.
 
 If INDENT is not specified, it is set to 4.
 
-Complexity: O(1).
-
 Complexity: O(D * C), where:
 
 * D is the depth of the property tree at NODE
