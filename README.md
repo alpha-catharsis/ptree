@@ -342,7 +342,8 @@ categories and leaf nodes represent properties.
 
 A category is characterized just by a tag.
 
-A property is characterized by a tag, a value and (optionally) a type.
+A property is characterized by a tag, a value and a type. The property type
+can be optionally omitted. In such cases it is set to `'generic`.
 
 Properties and categories tags can be of one of the following types:
 
@@ -432,7 +433,7 @@ behaviors.
 
 ### Errors
 
-The following errors might be singled when working on property trees:
+The following errors might be signaled when working on property trees:
 
 * `ptree-not-a-category` is signaled with a function expects a category but
   a property is passed to it
@@ -502,6 +503,8 @@ property at NODE.
 If TYPE is not specified, it is set to `'generic`.
 
 If NODE is a category, the error `ptree-not-a-property` is signaled.
+
+Complexity: O(1).
 
 #### ptree-child-nodes-num
 
@@ -820,6 +823,8 @@ because there are no next sibling nodes, the function stops.
 The function returns the number of steps not performed, i.e. a return value of
 0 indicates that all the requested steps have been successfully performed.
 
+**NOTE**: Automatic tag ordering affects the result of this function.
+
 Complexity: O(S), where S is the number of steps performed.
 
 ### ptree-iter-previous
@@ -834,6 +839,8 @@ because there are no previous sibling nodes, the function stops.
 
 The function returns the number of steps not performed, i.e. a return value of
 0 indicates that all the requested steps have been successfully performed.
+
+**NOTE**: Automatic tag ordering affects the result of this function.
 
 Complexity: O(S), where S is the number of steps performed.
 
