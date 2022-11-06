@@ -357,6 +357,17 @@
          (iter (ptree-iter root)))
     (should-error (ptree-iter-type iter) :type 'ptree-not-a-property)))
 
+(ert-deftest ptree-test-iter-set-property ()
+  (let* ((root '(nil 0 (generic 42)))
+         (iter (ptree-iter root)))
+    (should-error (ptree-iter-set-property iter 9) :type 'ptree-not-a-property))
+  (let* ((root (cons 'generic 42))
+         (iter (ptree-iter root)))
+    (ptree-iter-set-property iter 9)
+    (should (equal iter '(nil (generic . 9) nil nil)))
+    (ptree-iter-set-property iter 3 'number)
+    (should (equal iter '(nil (number . 3) nil nil)))))
+
 (ert-deftest ptree-test-iter-tag ()
   (let* ((root '(nil 0 (nil) test (generic . 42)))
          (iter (ptree-iter root)))
@@ -833,15 +844,14 @@
                                   pos-x (number . 50)
                                   pos-y (number . 100)
                                   width (number . 500))))))
-    (message "%s" (ptree-to-string root))
     (should (string= (ptree-to-string root) "current-users: 12
 desktop
-    background-color: black
+    background-color: \"black\"
 processes
     by-id
-        0: startx
-        1: dbus-launch
-        2: X
+        0: \"startx\"
+        1: \"dbus-launch\"
+        2: \"X\"
 windows
     \"emacs\"
         height: 800

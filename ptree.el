@@ -72,18 +72,18 @@ The function returns 't if NODE is a property, otherwise 'nil."
 
 ;; Node attributes
 
-(defun ptree-property-type (node)
-  "Get the property value associated with NODE.
-If NODE is a category, 'ptree-not-a-property error is signaled."
-  (if (ptree-property-p node)
-      (car node)
-    (signal 'ptree-not-a-property node)))
-
 (defun ptree-property-value (node)
   "Get the property value associated with NODE.
 If NODE is a category, 'ptree-not-a-property error is signaled."
   (if (ptree-property-p node)
       (cdr node)
+    (signal 'ptree-not-a-property node)))
+
+(defun ptree-property-type (node)
+  "Get the property value associated with NODE.
+If NODE is a category, 'ptree-not-a-property error is signaled."
+  (if (ptree-property-p node)
+      (car node)
     (signal 'ptree-not-a-property node)))
 
 (defun ptree-set-property (node value &optional type)
@@ -141,7 +141,7 @@ The functions returns the created property."
     (ptree--add-child-node node tag res nil)
     res))
 
-;; Nodes attachment
+;; Node attachment
 
 (defun ptree-attach-node (node tag child)
   "Attach CHILD node to NODE with TAG.
@@ -150,7 +150,7 @@ If a child node with the specified tag already exists,
 'ptree-node-already-existing error is signaled."
   (ptree--add-child-node node tag child nil))
 
-;; Nodes deletion
+;; Node deletion
 
 (defun ptree-delete-child-node (node tag)
   "Delete child node of NODE with TAG.
@@ -232,7 +232,7 @@ The function returns the last child node created."
         (setq props-data (cdr props-data))))
     res))
 
-;; Iterator functions
+;; Iterator management
 
 (defun ptree-iter (node)
   "Create an iterator associated with NODE.
@@ -266,6 +266,12 @@ If the node associated with ITERATOR is a category,
 If the node associated with ITERATOR is a category,
 'ptree-not-a-property error is signaled."
   (ptree-property-type (cadr iterator)))
+
+(defun ptree-iter-set-property (iterator value &optional type)
+  "Set VALUE and TYPE for property associated with ITERATOR.
+If the node asociated with ITERATOR is a category,
+'ptree-not-a-property error is signaled."
+  (ptree-set-property (cadr iterator) value type))
 
 (defun ptree-iter-tag (iterator)
   "Provides the tag of the node associated with ITERATOR.
@@ -323,7 +329,7 @@ The function returns the number of steps not performed"
   "Move ITERATOR up the property tree by STEPS.
 If STEPS is not specified, a single step is performed.
 If it is not possible to perform a step because the node is a property or
-because it has no child nodes, the function stops.
+because it is the iterator initial node, the function stops.
 The function returns the number of steps not performed"
   (unless steps
     (setq steps 1))
@@ -407,7 +413,7 @@ returned, otherwise 'nil is returned."
       (ptree-delete-child-node (cadr iterator) tag)
       t)))
 
-;; String conversion functions
+;; String conversion
 
 (defun ptree-to-string (node &optional indent)
   "Convert NODE to string using INDENT level.
@@ -637,7 +643,7 @@ Otherwise the function returns 't."
   (let ((tag-str (format "%S" tag))
         (prefix (concat (make-string (* indent level) ?\s))))
        (if (ptree-property-p node)
-           (format "%s%s: %s\n" prefix tag-str (ptree-property-value node))
+           (format "%s%s: %S\n" prefix tag-str (ptree-property-value node))
     (format "%s%s\n" prefix tag-str))))
 
 ;; Package provision
